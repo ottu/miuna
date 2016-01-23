@@ -24,14 +24,16 @@ enum SubCommand : string
 void command_start(string name)
 {
     writeln("start %s".format(name));
-    execute( [machinectl, "start", name] );
+    //execute( [machinectl, "start", name] );
+    execute( ["systemctl", "start", "systemd-nspawn@" ~ name] );
     return;
 }
 
 void command_poweroff(string name)
 {
     writeln("poweroff %s".format(name));
-    execute( [machinectl, "poweroff", name] );
+    //execute( [machinectl, "poweroff", name] );
+    execute( ["systemctl", "stop", "systemd-nspawn@" ~ name] );
     return;
 }
 
@@ -100,7 +102,8 @@ int main( string[] args )
             execute( ["ln", "-sf", "/dev/null", container_path ~ "/etc/systemd/network/80-container-host0.network"] );
 
             writeln("enable autoboot %s".format(container_name));
-            execute( [machinectl, "enable", container_name] );
+            //execute( [machinectl, "enable", container_name] );
+            execute( ["systemctl", "enable", "systemd-nspawn@" ~ container_name] );
 
             command_start(container_name);
         } break;
@@ -113,7 +116,8 @@ int main( string[] args )
             command_poweroff(container_name);
 
             writeln("disable autoboot %s".format(container_name));
-            execute( [machinectl, "disable", container_name] );
+            //execute( [machinectl, "disable", container_name] );
+            execute( ["systemctl", "disable", "systemd-nspawn@" ~ container_name] );
 
             writeln("remove VM: %s".format(container_path));
             rmdirRecurse( container_path );
