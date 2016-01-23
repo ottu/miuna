@@ -11,6 +11,7 @@ string pacman_cache_path = "/var/cache/pacman/pkg";
 
 enum SubCommand : string
 {
+    Init = "init",
     Create = "create",
     Delete = "delete",
     Start = "start",
@@ -24,9 +25,6 @@ void command_start(string name)
 {
     writeln("start %s".format(name));
     execute( [machinectl, "start", name] );
-
-    writeln("bind pacman cache dir to /var/cache/pacman/pkg-host");
-    execute( [machinectl, "--bind", pacman_cache_path, pacman_cache_path~"-host", "--mkdir"] );
     return;
 }
 
@@ -43,13 +41,23 @@ int main( string[] args )
     SubCommand sub = cast(SubCommand)(args[1]);
     writeln(sub);
 
-    string container_name = "";
-    if(sub != SubCommand.List) container_name = args[2];
-
     final switch (sub)
     {
+        case SubCommand.Init:
+        {
+            writeln("change /usr/lib/systemd/system/systemd-nspawn@.service");
+            execute( ["sed", "-i", "-e", "s/^ExecStart.*$/ExecStart=\\/usr\\/bin\\/systemd-nspawn --quiet --keep-unit --boot --link-journal=try-guest --network-bridge=br0 --settings=override --machine=%I --bind=\\/var\\/cache\\/pacman\\/pkg:\\/var\\/cache\\/pacman\\/pkg-host/", "/usr/lib/systemd/system/systemd-nspawn@.service"] );
+
+            writeln("******************************************");
+            writeln("*************** CAUTION ******************");
+            writeln("******************************************");
+            writeln("** please configure enable bridge \"br0\" **");
+            writeln("******************************************");
+        } break;
+
         case SubCommand.Create:
         {
+            string container_name = args[2];
             string container_path = container_root ~ container_name;
 
             if (exists(container_path))
@@ -88,6 +96,9 @@ int main( string[] args )
             writeln("modify pacman cache dir...");
             execute( ["sed", "-i", "-e", "s/^#CacheDir.*$/CacheDir = \\/var\\/cache\\/pacman\\/pkg-host\\//", container_path ~ "/etc/pacman.conf"] );
 
+            writeln("override /etc/systemd/network/80-container-host0.network");
+            execute( ["ln", "-sf", "/dev/null", container_path ~ "/etc/systemd/network/80-container-host0.network"] );
+
             writeln("enable autoboot %s".format(container_name));
             execute( [machinectl, "enable", container_name] );
 
@@ -96,6 +107,7 @@ int main( string[] args )
 
         case SubCommand.Delete:
         {
+            string container_name = args[2];
             string container_path = container_root ~ container_name;
 
             command_poweroff(container_name);
@@ -109,22 +121,26 @@ int main( string[] args )
 
         case SubCommand.Start:
         {
+            string container_name = args[2];
             command_start(container_name);
         } break;
 
         case SubCommand.Restart:
         {
+            string container_name = args[2];
             command_poweroff(container_name);
             command_start(container_name);
         } break;
 
         case SubCommand.Poweroff:
         {
+            string container_name = args[2];
             command_poweroff(container_name);
         } break;
 
         case SubCommand.Terminate:
         {
+            string container_name = args[2];
             writeln("terminate %s".format(container_name));
             execute( [machinectl, "terminate", container_name] );
         } break;
