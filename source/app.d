@@ -2,6 +2,7 @@ import std.stdio;
 import std.string;
 import std.process;
 import std.file;
+import std.path;
 
 string machinectl = "machinectl";
 string pacstrap = "pacstrap";
@@ -18,7 +19,8 @@ enum SubCommand : string
     Restart = "restart",
     Poweroff = "poweroff",
     Terminate = "terminate",
-    List = "list"
+    List = "list",
+    Playbook = "playbook"
 }
 
 void command_start(string name)
@@ -162,6 +164,26 @@ int main( string[] args )
             {
                 return 1;
             }
+        } break;
+
+        case SubCommand.Playbook:
+        {
+            writeln(args[0]);
+            chdir(dirName(args[0]) ~ "/playbooks");
+
+            string container_name = args[2];
+            auto pid =
+                spawnProcess(
+                    ["ansible-playbook", "%s.yml".format(container_name), "-e", "target=%s".format(container_name), "-e", "container_root=%s".format(container_root)],
+                    std.stdio.stdin,
+                    std.stdio.stdout
+                );
+
+            if (wait(pid) != 0)
+            {
+                return 1;
+            }
+
         } break;
     }
 
