@@ -13,18 +13,21 @@ string machinectl = "machinectl";
 string bootstrap;
 string container_root;
 string pacman_cache_path;
+string playbooks_path;
 
 void load_settings()
 {
     auto json = parseJSON(readText("settings.json"));
 
-    bootstrap = json["bootstrap_command"].str;
-    container_root = json["container_root"].str;
+    bootstrap =         json["bootstrap_command"].str;
+    container_root =    json["container_root"].str;
     pacman_cache_path = json["pacman_cache_path"].str;
+    playbooks_path =    json["playbooks_path"].str;
 
     assert(bootstrap != "",         "undefined bootstrap_command key on setting.json.");
     assert(container_root != "",    "undefined container_root key on setting.json.");
     assert(pacman_cache_path != "", "undefined pacman_cache_path key on setting.json.");
+    assert(playbooks_path != "",    "undefined playbooks_path key on setting.json.");
 }
 
 enum SubCommand : string
@@ -60,9 +63,7 @@ int main( string[] args )
 {
     load_settings();
 
-    writeln( args );
     SubCommand sub = cast(SubCommand)(args[1]);
-    writeln(sub);
 
     final switch (sub)
     {
@@ -203,7 +204,7 @@ int main( string[] args )
         case SubCommand.Playbook:
         {
             writeln(args[0]);
-            chdir(dirName(args[0]) ~ "/playbooks");
+            chdir(dirName(args[0]) ~ "/" ~ playbooks_path);
 
             string container_name = args[2];
             auto pid =
