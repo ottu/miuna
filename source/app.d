@@ -12,13 +12,13 @@ string pacman_cache_path;
 
 void load_settings()
 {
-    auto json = parseJSON(readText("setting.json"));
+    auto json = parseJSON(readText("settings.json"));
 
     bootstrap = json["bootstrap_command"].str;
-    container_root = json["container_path"].str;
+    container_root = json["container_root"].str;
     pacman_cache_path = json["pacman_cache_path"].str;
 
-    assert(bootstrap != "",          "undefined bootstrap_command key on setting.json.");
+    assert(bootstrap != "",         "undefined bootstrap_command key on setting.json.");
     assert(container_root != "",    "undefined container_root key on setting.json.");
     assert(pacman_cache_path != "", "undefined pacman_cache_path key on setting.json.");
 }
