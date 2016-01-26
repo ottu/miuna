@@ -1,0 +1,5 @@
+{
+    "bootstrap_command": "pacstrap -i -c -d",
+    "container_root": "/var/lib/container/",
+    "pacman_cache_path": "/var/cache/pacman/pkg/"
+}

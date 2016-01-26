@@ -3,12 +3,26 @@ import std.string;
 import std.process;
 import std.file;
 import std.path;
+import std.json;
 
 string machinectl = "machinectl";
 string pacstrap = "pacstrap";
-string nspawn = "systemd-nspawn";
-string container_root = "/var/lib/container/";
-string pacman_cache_path = "/var/cache/pacman/pkg";
+string bootstrap;
+string container_root;
+string pacman_cache_path;
+
+void load_settings()
+{
+    auto json = parseJSON(readText("setting.json"));
+
+    bootstrap = json["bootstrap_command"].str;
+    container_root = json["container_path"].str;
+    pacman_cache_path = json["pacman_cache_path"].str;
+
+    assert(bootstrap != "",          "undefined bootstrap_command key on setting.json.");
+    assert(container_root != "",    "undefined container_root key on setting.json.");
+    assert(pacman_cache_path != "", "undefined pacman_cache_path key on setting.json.");
+}
 
 enum SubCommand : string
 {
@@ -41,6 +55,8 @@ void command_poweroff(string name)
 
 int main( string[] args )
 {
+    load_settings();
+
     writeln( args );
     SubCommand sub = cast(SubCommand)(args[1]);
     writeln(sub);
@@ -74,18 +90,18 @@ int main( string[] args )
 
             auto pid =
                 spawnProcess(
-                    [pacstrap, "-i", "-c", "-d", container_path],
+                    [bootstrap, "-i", "-c", "-d", container_path],
                     std.stdio.stdin,
                     std.stdio.stdout
                 );
 
             if (wait(pid) != 0)
             {
-                writeln("pacstrap failed!");
+                writeln("bootstrap failed!");
                 rmdirRecurse( container_path );
                 return 1;
             } else {
-                writeln("pacstrap success!!");
+                writeln("bootstrap success!!");
             }
 
             assert( exists( container_path ), "%s not found.".format(container_path) );
