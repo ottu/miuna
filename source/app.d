@@ -1,5 +1,9 @@
 import std.stdio;
 import std.string;
+import std.array;
+import std.range;
+import std.conv;
+import std.algorithm;
 import std.process;
 import std.file;
 import std.path;
@@ -168,17 +172,32 @@ int main( string[] args )
 
         case SubCommand.List:
         {
-            auto pid =
-                spawnProcess(
-                    [machinectl, "list"],
-                    std.stdio.stdin,
-                    std.stdio.stdout
-                );
-
-            if (wait(pid) != 0)
+            struct VM
             {
-                return 1;
+                enum Status { RUNNING, STOPPED }
+                string name;
+                Status status;
             }
+
+            auto list = execute( [machinectl, "list"] );
+            auto images = execute( [machinectl, "list-images"] );
+
+            VM[] vms;
+
+            foreach(line; list.output.splitLines[1..$-2])
+                vms ~= VM(line.split[0], VM.Status.RUNNING);
+
+            foreach(line; images.output.splitLines[1..$-2])
+            {
+                string name = line.split[0];
+                if( vms.filter!(a => a.name == name).empty )
+                    vms ~= VM(name, VM.Status.STOPPED);
+            }
+
+            writeln("[NAME]          [STATUS]");
+            foreach(vm; vms)
+                writeln(vm.name ~ to!string(' '.repeat.take(15-vm.name.length).array) ~ " " ~ to!string(vm.status));
+
         } break;
 
         case SubCommand.Playbook:
