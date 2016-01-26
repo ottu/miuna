@@ -6,7 +6,6 @@ import std.path;
 import std.json;
 
 string machinectl = "machinectl";
-string pacstrap = "pacstrap";
 string bootstrap;
 string container_root;
 string pacman_cache_path;
@@ -32,7 +31,7 @@ enum SubCommand : string
     Start = "start",
     Restart = "restart",
     Poweroff = "poweroff",
-    Terminate = "terminate",
+//    Terminate = "terminate",
     List = "list",
     Playbook = "playbook"
 }
@@ -160,12 +159,12 @@ int main( string[] args )
             command_poweroff(container_name);
         } break;
 
-        case SubCommand.Terminate:
-        {
-            string container_name = args[2];
-            writeln("terminate %s".format(container_name));
-            execute( [machinectl, "terminate", container_name] );
-        } break;
+//        case SubCommand.Terminate:
+//        {
+//            string container_name = args[2];
+//            writeln("terminate %s".format(container_name));
+//            execute( [machinectl, "terminate", container_name] );
+//        } break;
 
         case SubCommand.List:
         {
