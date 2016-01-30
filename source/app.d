@@ -9,11 +9,13 @@ import std.file;
 import std.path;
 import std.json;
 
+string current_path;
 string machinectl = "machinectl";
 string bootstrap;
 string container_root;
 string pacman_cache_path;
 string playbooks_path;
+string ansible_python_interpreter;
 
 void load_settings()
 {
@@ -23,11 +25,14 @@ void load_settings()
     container_root =    json["container_root"].str;
     pacman_cache_path = json["pacman_cache_path"].str;
     playbooks_path =    json["playbooks_path"].str;
+    ansible_python_interpreter = json["ansible_python_interpreter"].str;
 
     assert(bootstrap != "",         "undefined bootstrap_command key on setting.json.");
     assert(container_root != "",    "undefined container_root key on setting.json.");
     assert(pacman_cache_path != "", "undefined pacman_cache_path key on setting.json.");
     assert(playbooks_path != "",    "undefined playbooks_path key on setting.json.");
+
+    playbooks_path = current_path ~ "/" ~ playbooks_path;
 }
 
 enum SubCommand : string
@@ -59,8 +64,39 @@ void command_poweroff(string name)
     return;
 }
 
+uint command_playbook(string name, bool isInit=false)
+{
+    chdir(playbooks_path);
+
+    string container_path = container_root ~ "/" ~ name;
+
+    string[] command_line = [
+        "ansible-playbook", "%s.yml".format(isInit ? "init": name),
+        "-e", "target=%s".format(name),
+        "-e", "container_root=%s".format(container_root),
+        "-i", "%s,".format(container_path)
+    ];
+
+    if(!ansible_python_interpreter.empty)
+        command_line ~= ["-e", "ansible_python_interpreter=%s".format(ansible_python_interpreter)];
+
+    writeln(command_line);
+
+    auto pid = spawnProcess( command_line, std.stdio.stdin, std.stdio.stdout );
+
+    chdir(current_path);
+
+    if (wait(pid) != 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+
 int main( string[] args )
 {
+    current_path = dirName(args[0]);
+
     load_settings();
 
     SubCommand sub = cast(SubCommand)(args[1]);
@@ -122,6 +158,12 @@ int main( string[] args )
 
             writeln("override /etc/systemd/network/80-container-host0.network");
             execute( ["ln", "-sf", "/dev/null", container_path ~ "/etc/systemd/network/80-container-host0.network"] );
+
+            writeln("check exists %s/init.yml".format(playbooks_path));
+            if( exists(dirName(args[0]) ~ "/" ~ playbooks_path ~ "/init.yml") ) {
+                writeln("%s/init.yml found. exec playbook.");
+                command_playbook(container_name, true);
+            }
 
             writeln("enable autoboot %s".format(container_name));
             //execute( [machinectl, "enable", container_name] );
@@ -203,22 +245,8 @@ int main( string[] args )
 
         case SubCommand.Playbook:
         {
-            writeln(args[0]);
-            chdir(dirName(args[0]) ~ "/" ~ playbooks_path);
-
             string container_name = args[2];
-            auto pid =
-                spawnProcess(
-                    ["ansible-playbook", "%s.yml".format(container_name), "-e", "target=%s".format(container_name), "-e", "container_root=%s".format(container_root)],
-                    std.stdio.stdin,
-                    std.stdio.stdout
-                );
-
-            if (wait(pid) != 0)
-            {
-                return 1;
-            }
-
+            command_playbook(container_name);
         } break;
     }
 
