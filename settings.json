@@ -1,6 +1,8 @@
 {
-    "bootstrap_command": "pacstrap -i -c -d",
+    "bootstrap_command": "pacstrap",
+    "bootstrap_options": [ "-i", "-c", "-d" ],
     "container_root": "/var/lib/container/",
     "pacman_cache_path": "/var/cache/pacman/pkg/",
-    "playbooks_path": "./playbooks"
+    "playbooks_path": "./playbooks",
+    "ansible_python_interpreter": "/usr/bin/python2"
 }

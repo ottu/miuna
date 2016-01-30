@@ -10,8 +10,10 @@ import std.path;
 import std.json;
 
 string current_path;
+
 string machinectl = "machinectl";
 string bootstrap;
+string[] bootstrap_options;
 string container_root;
 string pacman_cache_path;
 string playbooks_path;
@@ -22,6 +24,7 @@ void load_settings()
     auto json = parseJSON(readText("settings.json"));
 
     bootstrap =         json["bootstrap_command"].str;
+    bootstrap_options = json["bootstrap_options"].array.map!"a.str".array;
     container_root =    json["container_root"].str;
     pacman_cache_path = json["pacman_cache_path"].str;
     playbooks_path =    json["playbooks_path"].str;
@@ -128,9 +131,11 @@ int main( string[] args )
 
             mkdir( container_path );
 
+            writeln(bootstrap);
+            writeln(bootstrap_options);
             auto pid =
                 spawnProcess(
-                    [bootstrap, "-i", "-c", "-d", container_path],
+                    [bootstrap] ~ bootstrap_options ~ [container_path, "base", "python2"],
                     std.stdio.stdin,
                     std.stdio.stdout
                 );
