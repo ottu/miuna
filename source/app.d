@@ -109,7 +109,7 @@ int main( string[] args )
         case SubCommand.Init:
         {
             writeln("change /usr/lib/systemd/system/systemd-nspawn@.service");
-            execute( ["sed", "-i", "-e", "s/^ExecStart.*$/ExecStart=\\/usr\\/bin\\/systemd-nspawn --quiet --keep-unit --boot --link-journal=try-guest --network-bridge=br0 --settings=override --machine=%I --bind=\\/var\\/cache\\/pacman\\/pkg:\\/var\\/cache\\/pacman\\/pkg-host/", "/usr/lib/systemd/system/systemd-nspawn@.service"] );
+            execute( ["sed", "-i", "-e", "s/^ExecStart.*$/ExecStart=\\/usr\\/bin\\/systemd-nspawn --quiet --keep-unit --boot --link-journal=try-guest --network-bridge=br0 --settings=override --machine=%I --bind=\\/var\\/cache\\/pacman\\/pkg", "/usr/lib/systemd/system/systemd-nspawn@.service"] );
 
             writeln("******************************************");
             writeln("*************** CAUTION ******************");
@@ -157,9 +157,6 @@ int main( string[] args )
 
             writeln("remove securetty...");
             remove( container_path ~ "/etc/securetty" );
-
-            writeln("modify pacman cache dir...");
-            execute( ["sed", "-i", "-e", "s/^#CacheDir.*$/CacheDir = \\/var\\/cache\\/pacman\\/pkg-host\\//", container_path ~ "/etc/pacman.conf"] );
 
             writeln("override /etc/systemd/network/80-container-host0.network");
             execute( ["ln", "-sf", "/dev/null", container_path ~ "/etc/systemd/network/80-container-host0.network"] );
