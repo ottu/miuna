@@ -109,7 +109,7 @@ int main( string[] args )
         case SubCommand.Init:
         {
             writeln("change /usr/lib/systemd/system/systemd-nspawn@.service");
-            execute( ["sed", "-i", "-e", "s/^ExecStart.*$/ExecStart=\\/usr\\/bin\\/systemd-nspawn --quiet --keep-unit --boot --link-journal=try-guest --network-bridge=br0 --settings=override --machine=%I --bind=\\/var\\/cache\\/pacman\\/pkg", "/usr/lib/systemd/system/systemd-nspawn@.service"] );
+            execute( ["sed", "-i", "-e", "s/^ExecStart.*$/ExecStart=\\/usr\\/bin\\/systemd-nspawn --quiet --keep-unit --boot --link-journal=try-guest --network-bridge=br0 --settings=override --machine=%I --bind=\\/var\\/cache\\/pacman\\/pkg/g", "/usr/lib/systemd/system/systemd-nspawn@.service"] );
 
             writeln("******************************************");
             writeln("*************** CAUTION ******************");
