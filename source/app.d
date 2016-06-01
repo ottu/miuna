@@ -9,34 +9,7 @@ import std.file;
 import std.path;
 import std.json;
 
-string current_path;
-
-string machinectl = "machinectl";
-string bootstrap;
-string[] bootstrap_options;
-string container_root;
-string pacman_cache_path;
-string playbooks_path;
-string ansible_python_interpreter;
-
-void load_settings()
-{
-    auto json = parseJSON(readText("settings.json"));
-
-    bootstrap =         json["bootstrap_command"].str;
-    bootstrap_options = json["bootstrap_options"].array.map!"a.str".array;
-    container_root =    json["container_root"].str;
-    pacman_cache_path = json["pacman_cache_path"].str;
-    playbooks_path =    json["playbooks_path"].str;
-    ansible_python_interpreter = json["ansible_python_interpreter"].str;
-
-    assert(bootstrap != "",         "undefined bootstrap_command key on setting.json.");
-    assert(container_root != "",    "undefined container_root key on setting.json.");
-    assert(pacman_cache_path != "", "undefined pacman_cache_path key on setting.json.");
-    assert(playbooks_path != "",    "undefined playbooks_path key on setting.json.");
-
-    playbooks_path = current_path ~ "/" ~ playbooks_path;
-}
+import settings;
 
 enum SubCommand : string
 {
@@ -67,27 +40,25 @@ void command_poweroff(string name)
     return;
 }
 
-uint command_playbook(string name, bool isInit=false)
+uint command_playbook(string name, Settings settings, bool isInit=false)
 {
-    chdir(playbooks_path);
+    chdir(settings.playbooks_path);
 
-    string container_path = container_root ~ "/" ~ name;
+    string container_path = settings.container_root ~ "/" ~ name;
 
     string[] command_line = [
         "ansible-playbook", "%s.yml".format(isInit ? "init": name),
         "-e", "target=%s".format(name),
-        "-e", "container_root=%s".format(container_root),
-        "-i", "%s,".format(container_path)
+        "-e", "container_root=%s".format(settings.container_root),
+        "-i", "%s,".format(container_path),
+        "-e", "ansible_python_interpreter=%s".format(settings.ansible_python_interpreter)
     ];
-
-    if(!ansible_python_interpreter.empty)
-        command_line ~= ["-e", "ansible_python_interpreter=%s".format(ansible_python_interpreter)];
 
     writeln(command_line);
 
     auto pid = spawnProcess( command_line, std.stdio.stdin, std.stdio.stdout );
 
-    chdir(current_path);
+    chdir(settings.current_path);
 
     if (wait(pid) != 0)
     {
@@ -98,9 +69,7 @@ uint command_playbook(string name, bool isInit=false)
 
 int main( string[] args )
 {
-    current_path = dirName(args[0]);
-
-    load_settings();
+    Settings settings = load_settings(dirName(args[0]));
 
     SubCommand sub = cast(SubCommand)(args[1]);
 
@@ -121,7 +90,7 @@ int main( string[] args )
         case SubCommand.Create:
         {
             string container_name = args[2];
-            string container_path = container_root ~ container_name;
+            string container_path = settings.container_root ~ container_name;
 
             if (exists(container_path))
             {
@@ -131,14 +100,20 @@ int main( string[] args )
 
             mkdir( container_path );
 
+            TargetArch arch = cast(TargetArch)(args[3]);
+            auto bootstrap = settings.bootstraps[arch];
+
             writeln(bootstrap);
-            writeln(bootstrap_options);
-            auto pid =
-                spawnProcess(
-                    [bootstrap] ~ bootstrap_options ~ [container_path, "base", "python2"],
-                    std.stdio.stdin,
-                    std.stdio.stdout
-                );
+
+            string[] commandline;
+            final switch (arch)
+            {
+                case TargetArch.Arch: { commandline = bootstrap.compileArch(container_path); } break;
+                case TargetArch.Ubuntu: { commandline = bootstrap.compileUbuntu(container_path, args[4]); } break;
+            }
+
+            writeln(commandline);
+            auto pid = spawnProcess( commandline, std.stdio.stdin, std.stdio.stdout );
 
             if (wait(pid) != 0)
             {
@@ -155,16 +130,26 @@ int main( string[] args )
             writeln("===== initial setups =====");
             writeln("==========================");
 
-            writeln("remove securetty...");
-            remove( container_path ~ "/etc/securetty" );
+            final switch(arch)
+            {
+                case TargetArch.Arch:
+                {
+                    writeln("remove securetty...");
+                    remove( container_path ~ "/etc/securetty" );
 
-            writeln("override /etc/systemd/network/80-container-host0.network");
-            execute( ["ln", "-sf", "/dev/null", container_path ~ "/etc/systemd/network/80-container-host0.network"] );
+                    writeln("override /etc/systemd/network/80-container-host0.network");
+                    execute( ["ln", "-sf", "/dev/null", container_path ~ "/etc/systemd/network/80-container-host0.network"] );
+                } break;
 
-            writeln("check exists %s/init.yml".format(playbooks_path));
-            if( exists(dirName(args[0]) ~ "/" ~ playbooks_path ~ "/init.yml") ) {
+                case TargetArch.Ubuntu:
+                {
+                } break;
+            }
+
+            writeln("check exists %s/init.yml".format(settings.playbooks_path));
+            if( exists(settings.playbooks_path ~ "/init.yml") ) {
                 writeln("%s/init.yml found. exec playbook.");
-                command_playbook(container_name, true);
+                command_playbook(container_name, settings, true);
             }
 
             writeln("enable autoboot %s".format(container_name));
@@ -177,7 +162,7 @@ int main( string[] args )
         case SubCommand.Delete:
         {
             string container_name = args[2];
-            string container_path = container_root ~ container_name;
+            string container_path = settings.container_root ~ container_name;
 
             command_poweroff(container_name);
 
@@ -224,8 +209,8 @@ int main( string[] args )
                 Status status;
             }
 
-            auto list = execute( [machinectl, "list"] );
-            auto images = execute( [machinectl, "list-images"] );
+            auto list = execute( [settings.machinectl, "list"] );
+            auto images = execute( [settings.machinectl, "list-images"] );
 
             VM[] vms;
 
@@ -248,7 +233,7 @@ int main( string[] args )
         case SubCommand.Playbook:
         {
             string container_name = args[2];
-            command_playbook(container_name);
+            command_playbook(container_name, settings);
         } break;
     }
 

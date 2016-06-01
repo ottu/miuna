@@ -3,11 +3,13 @@
         "arch": {
             "command": "pacstrap",
             "options": [ "-i", "-c", "-d" ],
+            "extras": ["python2"],
             "cache_path": "/var/cache/pacman/pkg/"
         },
         "ubuntu": {
             "command": "debootstrap",
-            "options": [ "--include=dbus" ],
+            "options": [],
+            "extras": ["python2.7"],
             "mirror": "http://ubuntutym.u-toyama.ac.jp/ubuntu"
         }
     },
