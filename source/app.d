@@ -143,6 +143,22 @@ int main( string[] args )
 
                 case TargetArch.Ubuntu:
                 {
+                    auto pipe = pipeProcess(["systemd-nspawn", "-D", container_path], Redirect.stdin);
+
+                    writeln("change root passwd to \"root\", please rechange manually.");
+                    pipe.stdin.writeln("passwd");
+                    pipe.stdin.writeln("root");   // type
+                    pipe.stdin.writeln("root");   // retype
+
+                    writeln("enable dbus");
+                    pipe.stdin.writeln("/lib/systemd/systemd-sysv-install enable dbus");
+
+                    pipe.stdin.flush();
+                    pipe.stdin.close();
+
+                    if (wait(pipe.pid) != 0) {
+                        writeln("pipeProcess exec failed!");
+                    }
                 } break;
             }
 
