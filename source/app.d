@@ -136,9 +136,6 @@ int main( string[] args )
                 {
                     writeln("remove securetty...");
                     remove( container_path ~ "/etc/securetty" );
-
-                    writeln("override /etc/systemd/network/80-container-host0.network");
-                    execute( ["ln", "-sf", "/dev/null", container_path ~ "/etc/systemd/network/80-container-host0.network"] );
                 } break;
 
                 case TargetArch.Ubuntu:
@@ -161,6 +158,9 @@ int main( string[] args )
                     }
                 } break;
             }
+
+            writeln("override /etc/systemd/network/80-container-host0.network");
+            execute( ["ln", "-sf", "/dev/null", container_path ~ "/etc/systemd/network/80-container-host0.network"] );
 
             writeln("check exists %s/init.yml".format(settings.playbooks_path));
             if( exists(settings.playbooks_path ~ "/init.yml") ) {
