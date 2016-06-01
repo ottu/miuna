@@ -1,4 +1,16 @@
 {
+    "bootstraps": {
+        "arch": {
+            "command": "pacstrap",
+            "options": [ "-i", "-c", "-d" ],
+            "cache_path": "/var/cache/pacman/pkg/"
+        },
+        "ubuntu": {
+            "command": "debootstrap",
+            "options": [ "--include=dbus" ],
+            "mirror": "http://ubuntutym.u-toyama.ac.jp/ubuntu"
+        }
+    },
     "bootstrap_command": "pacstrap",
     "bootstrap_options": [ "-i", "-c", "-d" ],
     "container_root": "/var/lib/container/",
