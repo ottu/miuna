@@ -223,6 +223,7 @@ int main( string[] args )
                 enum Status { RUNNING, STOPPED }
                 string name;
                 Status status;
+                string address = "none";
             }
 
             auto list = execute( [settings.machinectl, "list"] );
@@ -231,7 +232,18 @@ int main( string[] args )
             VM[] vms;
 
             foreach(line; list.output.splitLines[1..$-2])
-                vms ~= VM(line.split[0], VM.Status.RUNNING);
+            {
+                string name = line.split[0];
+                auto p = pipe();
+                auto sid = spawnProcess(["machinectl", "status", name], stdin, p.writeEnd);
+                wait(sid);
+                auto output = pipe();
+                auto gid = spawnProcess(["grep", "Address"], p.readEnd, output.writeEnd);
+                wait(gid);
+
+                string address = output.readEnd.byLine.map!(l => l.split(":")[1].strip.to!string).array[0];
+                vms ~= VM(name, VM.Status.RUNNING, address);
+            }
 
             foreach(line; images.output.splitLines[1..$-2])
             {
@@ -240,9 +252,15 @@ int main( string[] args )
                     vms ~= VM(name, VM.Status.STOPPED);
             }
 
-            writeln("[NAME]          [STATUS]");
+            writeln("[NAME]          [STATUS] [ADDRESS]");
             foreach(vm; vms)
-                writeln(vm.name ~ to!string(' '.repeat.take(15-vm.name.length).array) ~ " " ~ to!string(vm.status));
+                writeln(vm.name ~
+                        to!string(' '.repeat.take(15-vm.name.length).array) ~
+                        " " ~
+                        to!string(vm.status) ~
+                        "  " ~
+                        vm.address
+                        );
 
         } break;
 
