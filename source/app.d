@@ -40,6 +40,17 @@ void command_poweroff(string name)
     return;
 }
 
+private uint exec_ansible(string[] command_line)
+{
+    auto pid = spawnProcess( command_line, std.stdio.stdin, std.stdio.stdout );
+
+    if (wait(pid) != 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+
 uint command_playbook(string name, Settings settings, bool isInit=false)
 {
     chdir(settings.playbooks_path);
@@ -56,15 +67,33 @@ uint command_playbook(string name, Settings settings, bool isInit=false)
 
     writeln(command_line);
 
-    auto pid = spawnProcess( command_line, std.stdio.stdin, std.stdio.stdout );
+    chdir(settings.current_path);
+    return exec_ansible(command_line);
+}
+
+uint command_playbook_all(Settings settings)
+{
+    chdir(settings.playbooks_path);
+
+    auto list = execute( [settings.machinectl, "list"] );
+    string inventories;
+    foreach(line; list.output.splitLines[1..$-2])
+    {
+        string name = line.split[0];
+        string container_path = settings.container_root ~ "/" ~ name ~ ",";
+        inventories ~= container_path;
+    }
+
+    string[] command_line = [
+        "ansible-playbook", "all.yml",
+        "-i", "%s,".format(inventories),
+        "-e", "ansible_python_interpreter=%s".format(settings.ansible_python_interpreter)
+    ];
+
+    writeln(command_line);
 
     chdir(settings.current_path);
-
-    if (wait(pid) != 0)
-    {
-        return 1;
-    }
-    return 0;
+    return exec_ansible(command_line);
 }
 
 int main( string[] args )
@@ -270,7 +299,12 @@ int main( string[] args )
         case SubCommand.Playbook:
         {
             string container_name = args[2];
-            command_playbook(container_name, settings);
+
+            if (container_name == "all") {
+                command_playbook_all(settings);
+            } else {
+                command_playbook(container_name, settings);
+            }
         } break;
     }
 
