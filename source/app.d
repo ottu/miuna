@@ -164,8 +164,8 @@ int main( string[] args )
             {
                 case TargetArch.Arch:
                 {
-                    writeln("remove securetty...");
-                    remove( container_path ~ "/etc/securetty" );
+                    writeln("add pts/0 to securetty...");
+                    append( container_path~"/etc/securetty", "pts/0");
                 } break;
 
                 case TargetArch.Ubuntu:
