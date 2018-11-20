@@ -3,7 +3,7 @@
         "arch": {
             "command": "pacstrap",
             "options": [ "-i", "-c", "-d" ],
-            "extras": ["python2"],
+            "extras": ["python"],
             "cache_path": "/var/cache/pacman/pkg/"
         },
         "ubuntu": {
@@ -17,6 +17,5 @@
     "bootstrap_options": [ "-i", "-c", "-d" ],
     "container_root": "/var/lib/machines/",
     "pacman_cache_path": "/var/cache/pacman/pkg/",
-    "playbooks_path": "./playbooks",
-    "ansible_python_interpreter": "/usr/bin/python2"
+    "playbooks_path": "./playbooks"
 }

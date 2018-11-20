@@ -46,7 +46,6 @@ struct Settings
     BootStrap[TargetArch] bootstraps;
     string container_root;
     string playbooks_path;
-    string ansible_python_interpreter;
 }
 
 Settings load_settings( string current_path )
@@ -58,12 +57,10 @@ Settings load_settings( string current_path )
     assert(current_path != "", "invalid current_path");
     assert(json["container_root"].str != "", "undefined container_root key on settings.json");
     assert(json["playbooks_path"].str != "", "undefined playbooks_path key on settings.json");
-    assert(json["ansible_python_interpreter"].str != "", "undefined ansible_python_interpreter key on settings.json");
 
     settings.current_path = current_path;
     settings.container_root = json["container_root"].str;
     settings.playbooks_path = current_path ~ "/" ~ json["playbooks_path"].str;
-    settings.ansible_python_interpreter = json["ansible_python_interpreter"].str;
 
     foreach(key, value; json["bootstraps"].object)
     {

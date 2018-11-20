@@ -61,8 +61,7 @@ uint command_playbook(string name, Settings settings, bool isInit=false)
         "ansible-playbook", "%s.yml".format(isInit ? "init": name),
         "-e", "target=%s".format(name),
         "-e", "container_root=%s".format(settings.container_root),
-        "-i", "%s,".format(container_path),
-        "-e", "ansible_python_interpreter=%s".format(settings.ansible_python_interpreter)
+        "-i", "%s,".format(container_path)
     ];
 
     writeln(command_line);
@@ -86,8 +85,7 @@ uint command_playbook_all(Settings settings)
 
     string[] command_line = [
         "ansible-playbook", "all.yml",
-        "-i", "%s,".format(inventories),
-        "-e", "ansible_python_interpreter=%s".format(settings.ansible_python_interpreter)
+        "-i", "%s,".format(inventories)
     ];
 
     writeln(command_line);
