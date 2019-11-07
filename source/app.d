@@ -104,8 +104,10 @@ int main( string[] args )
     {
         case SubCommand.Init:
         {
-            writeln("change /usr/lib/systemd/system/systemd-nspawn@.service");
-            execute( ["sed", "-i", "-e", "s/^ExecStart.*$/ExecStart=\\/usr\\/bin\\/systemd-nspawn --quiet --keep-unit --boot --link-journal=try-guest --network-bridge=br0 --settings=override --machine=%I --bind=\\/var\\/cache\\/pacman\\/pkg/g", "/usr/lib/systemd/system/systemd-nspawn@.service"] );
+            if (!exists(settings.nspawn_dir)) {
+                writefln("create %s", settings.nspawn_dir);
+                mkdir(settings.nspawn_dir);
+            }
 
             writeln("enable systemd machines.target");
             execute( ["systemctl", "enable", "machines.target"] );
@@ -189,6 +191,13 @@ int main( string[] args )
                 } break;
             }
 
+            writeln("make container setting file for " ~ container_name);
+            auto f = File(settings.nspawn_dir ~ "/" ~ container_name ~ ".nspawn", "w");
+            f.writeln("[Files]");
+            f.writeln("Bind=/var/cache/pacman/pkg:/var/cache/pacman/pkg");
+            f.writeln("[Network]");
+            f.writeln("Bridge=br0");
+
             writeln("override /etc/systemd/network/80-container-host0.network");
             execute( ["ln", "-sf", "/dev/null", container_path ~ "/etc/systemd/network/80-container-host0.network"] );
 
@@ -218,6 +227,7 @@ int main( string[] args )
 
             writeln("remove VM: %s".format(container_path));
             rmdirRecurse( container_path );
+            remove(settings.nspawn_dir ~ "/" ~ container_name ~ ".nspawn");
         } break;
 
         case SubCommand.Start:

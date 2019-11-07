@@ -45,6 +45,7 @@ struct Settings
     string machinectl = "machinectl";
     BootStrap[TargetArch] bootstraps;
     string container_root;
+    string nspawn_dir;
     string playbooks_path;
 }
 
@@ -56,10 +57,12 @@ Settings load_settings( string current_path )
 
     assert(current_path != "", "invalid current_path");
     assert(json["container_root"].str != "", "undefined container_root key on settings.json");
+    assert(json["nspawn_dir"].str != "", "undefined nspawn_dir key no setting.json");
     assert(json["playbooks_path"].str != "", "undefined playbooks_path key on settings.json");
 
     settings.current_path = current_path;
     settings.container_root = json["container_root"].str;
+    settings.nspawn_dir = json["nspawn_dir"].str;
     settings.playbooks_path = current_path ~ "/" ~ json["playbooks_path"].str;
 
     foreach(key, value; json["bootstraps"].object)

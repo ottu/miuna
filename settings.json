@@ -16,6 +16,7 @@
     "bootstrap_command": "pacstrap",
     "bootstrap_options": [ "-i", "-c", "-d" ],
     "container_root": "/var/lib/machines/",
+    "nspawn_dir": "/etc/systemd/nspawn",
     "pacman_cache_path": "/var/cache/pacman/pkg/",
     "playbooks_path": "./playbooks"
 }
