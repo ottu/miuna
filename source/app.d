@@ -61,7 +61,8 @@ uint command_playbook(string name, Settings settings, bool isInit=false)
         "ansible-playbook", "%s.yml".format(isInit ? "init": name),
         "-e", "target=%s".format(name),
         "-e", "container_root=%s".format(settings.container_root),
-        "-i", "%s,".format(container_path)
+        "-i", "%s,".format(container_path),
+        "--diff"
     ];
 
     writeln(command_line);
